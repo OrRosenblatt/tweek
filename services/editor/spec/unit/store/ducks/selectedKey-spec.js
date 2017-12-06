@@ -1,4 +1,4 @@
-/* global jest, beforeEach, describe, it, expect */
+/* global jest, beforeEach, describe, it, afterEach, expect */
 jest.unmock('../../../../src/store/ducks/tags');
 jest.unmock('../../../../src/store/ducks/selectedKey');
 jest.unmock('../../../../src/utils/http');
@@ -21,20 +21,18 @@ jest.mock('../../../../src/store/ducks/alerts', () => {
 import {
   openKey,
   saveKey,
-  updateKeyValueType,
+  changeKeyValueType,
   updateKeyName,
 } from '../../../../src/store/ducks/selectedKey';
 import {
   createBlankJPadKey,
-  createBlankKeyManifest,
   BLANK_KEY_NAME,
 } from '../../../../src/store/ducks/ducks-utils/blankKeyDefinition';
 import { assert, expect } from 'chai';
 import fetchMock from 'fetch-mock';
 import keyNameValidations from '../../../../src/store/ducks/ducks-utils/validations/key-name-validations';
 import keyValueTypeValidations from '../../../../src/store/ducks/ducks-utils/validations/key-value-type-validations';
-import R from 'ramda';
-import alerts from '../../../../src/store/ducks/alerts';
+import * as R from 'ramda';
 
 describe('selectedKey', async () => {
   const KEY_OPENED = 'KEY_OPENED';
@@ -60,7 +58,10 @@ describe('selectedKey', async () => {
   beforeEach(() => {
     dispatchMock = jest.fn((action) => {
       if (isFunction(action)) {
-        return action(dispatchMock);
+        return action(
+          dispatchMock,
+          jest.fn().mockReturnValue({ selectedKey: { validation: { isValid: true } } }),
+        );
       }
       return action;
     });
@@ -71,19 +72,19 @@ describe('selectedKey', async () => {
     fetchMock.restore();
   });
 
-  const generateState = (openedKeyName, keyNameToAdd, keySource = '') => {
+  const generateState = (openedKeyName, keyNameToAdd) => {
     const state = {
       selectedKey: {
         key: openedKeyName,
         local: {
           key: keyNameToAdd,
-          keyDef: {
+          implementation: {
             source: '',
           },
-          manifest:{
+          manifest: {
             implementation: {
-              type: "file",
-              format: "jpad",
+              type: 'file',
+              format: 'jpad',
             },
           },
         },
@@ -120,7 +121,7 @@ describe('selectedKey', async () => {
   describe('openKey', () => {
     beforeEach(() => {
       fetchMock.get('glob:*/api/tags', []);
-      fetchMock.get('glob:*/api/schemas/', {});
+      fetchMock.get('glob:*/api/schemas', {});
     });
 
     it('should dispatch KEY_OPENED with blank payload for blank key name', async () => {
@@ -158,24 +159,24 @@ describe('selectedKey', async () => {
       const expectedServerData = {
         implementation: 'some key def source',
         manifest: {
-          key_path:"test",
-          meta:{
+          key_path: 'test',
+          meta: {
             name: '',
             description: '',
             valueType: '',
           },
-          implementation:{
-            type: "file",
-            format: "jpad",
+          implementation: {
+            type: 'file',
+            format: 'jpad',
           },
         },
       };
 
       const expectedPayload = {
         key: keyName,
-        keyDef: {
+        implementation: {
           source: expectedServerData.implementation,
-          type: "jpad",
+          type: 'jpad',
         },
         manifest: expectedServerData.manifest,
       };
@@ -190,7 +191,6 @@ describe('selectedKey', async () => {
       const keyOpenedDispatchAction = dispatchMock.mock.calls[2][0];
       assertDispatchAction(keyOpenedDispatchAction, { type: KEY_OPENED, payload: expectedPayload });
     });
-
 
     it('should dispatch KEY_OPENED with correct payload if GET failed', async () => {
       // Arrange
@@ -215,7 +215,7 @@ describe('selectedKey', async () => {
       // Arrange
       const expectedTags = [{ name: 'pita' }];
       fetchMock.restore();
-      fetchMock.get('glob:*/api/schemas/', {});
+      fetchMock.get('glob:*/api/schemas', {});
       fetchMock.get('glob:*/api/tags', expectedTags);
 
       // Act
@@ -349,30 +349,6 @@ describe('selectedKey', async () => {
 
         expect(pushAction[0]).to.deep.include({ payload: expectedPushPayload });
       });
-
-      it('should not open the new saved key if there was key change while saving', async () => {
-        // Arrange
-        const keyNameToSave = 'someCategory/someKeyName';
-
-        currentState = generateState(BLANK_KEY_NAME, keyNameToSave);
-
-        let fetchPutResolver;
-        const fetchPromise = new Promise((resolve, _) => {
-          fetchPutResolver = resolve;
-        });
-
-        fetchMock.putOnce('glob:*/api/keys/*', fetchPromise);
-
-        // Act
-        const func = saveKey();
-        const saveKeyPromise = func(dispatchMock, () => currentState);
-
-        currentState.selectedKey.key = 'some other key name';
-        fetchPutResolver({});
-        await saveKeyPromise;
-
-        assert(!doesDispatchPushTookAction(), 'should not open the new saved key');
-      });
     });
 
     describe('save existing key', () => {
@@ -398,7 +374,7 @@ describe('selectedKey', async () => {
     });
   });
 
-  describe('updateKeyValueType', () => {
+  describe('changeKeyValueType', () => {
     it('should dispatch actions correctly', async () => {
       // Arrange
       const keyValueType = 'pita';
@@ -406,7 +382,7 @@ describe('selectedKey', async () => {
       expectedKeyValueTypeValidation.isShowingHint = true;
 
       const initializeState = generateState('some key', 'some new key');
-      initializeState.selectedKey.local.keyDef.source = JSON.stringify({
+      initializeState.selectedKey.local.implementation.source = JSON.stringify({
         partitions: [],
         rules: [],
       });
@@ -421,7 +397,7 @@ describe('selectedKey', async () => {
       };
 
       // Act
-      const func = updateKeyValueType(keyValueType);
+      const func = changeKeyValueType(keyValueType);
       await func(dispatchMock, () => initializeState);
 
       // Assert
@@ -436,40 +412,6 @@ describe('selectedKey', async () => {
         type: KEY_VALIDATION_CHANGE,
         payload: expectedValidationPayload,
       });
-    });
-
-    it('should show confirm if there are existing rules values and only dispatch for confirm', async () => {
-      // Arrange
-      const keyValueType = 'pita';
-      const expectedKeyValueTypeValidation = keyValueTypeValidations(keyValueType);
-      expectedKeyValueTypeValidation.isShowingHint = true;
-
-      const initializeState = generateState('some key', 'some new key');
-      initializeState.selectedKey.local.keyDef.source = JSON.stringify({
-        partitions: [],
-        rules: [
-          {
-            Value: 'some rule value',
-          },
-        ],
-      });
-
-      initializeState.keys = [];
-
-      alerts.setResult(false);
-
-      // Act & Assert
-      const func1 = updateKeyValueType(keyValueType);
-      await func1(dispatchMock, () => initializeState);
-
-      expect(dispatchMock.mock.calls.length).to.equal(1, 'should call confirm once');
-
-      alerts.setResult(true);
-
-      const func2 = updateKeyValueType(keyValueType);
-      await func2(dispatchMock, () => initializeState);
-
-      expect(dispatchMock.mock.calls.length).to.equal(4, 'should call confirm once');
     });
   });
 

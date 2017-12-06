@@ -2,13 +2,16 @@
 
 const chai = require('chai');
 const simple = require('simple-mock');
-const TagsRepository = require('../src/repositories/tags-repository');
+const TagsRepository = require('../src/repositories/tags-repository').default;
 
 const expect = chai.expect;
 
 describe('TagsRepository', () => {
   let mockGitRepo = {};
   let mockTransactionManager = {
+    with: function (action) {
+      return action(mockGitRepo);
+    },
     write: function (action) {
       return action(mockGitRepo);
     },

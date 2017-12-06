@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
-import R from 'ramda';
+import * as R from 'ramda';
 import MonacoEditor from 'react-monaco-editor';
 import { AutoSizer } from 'react-virtualized';
 import './JPadTextEditor.css';
@@ -10,6 +10,14 @@ const requireConfig = {
   paths: {
     vs: 'https://unpkg.com/monaco-editor@0.8.2/min/vs',
   },
+};
+
+const monacoOptions = {
+  autoIndent: true,
+  automaticLayout: true,
+  formatOnPaste: true,
+  formatOnType: true,
+  scrollBeyondLastLine: false,
 };
 
 class JPadTextEditor extends Component {
@@ -60,24 +68,25 @@ class JPadTextEditor extends Component {
 
     return (
       <AutoSizer disableWidth>
-        {({ height }) =>
+        {({ height }) => (
           <div style={{ height: height - 20 }}>
             <MonacoEditor
-              height={height - 20}
               language="json"
               value={currentSource}
-              options={{ scrollBeyondLastLine: false, readOnly: isReadonly }}
+              options={{ ...monacoOptions, readOnly: isReadonly }}
               onChange={newSource => this.onChange(newSource)}
               requireConfig={requireConfig}
             />
             <button
-              className={'save-code-changes-button'}
+              className="save-code-changes-button"
+              data-comp="save-jpad-text"
               onClick={() => this.save()}
               disabled={!this.state.allowSave}
             >
               Insert Changes
             </button>
-          </div>}
+          </div>
+        )}
       </AutoSizer>
     );
   }

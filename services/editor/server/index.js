@@ -10,24 +10,46 @@ import serverRoutes from './serverRoutes';
 import GitContinuousUpdater from './utils/continuous-updater';
 import * as Registration from './api/registration';
 import getVapidKeys from './getVapidKeys';
-
+import helmet from 'helmet';
+import fs from 'fs';
+import os from 'os';
 const crypto = require('crypto');
 const passport = require('passport');
 const selectAuthenticationProviders = require('./auth/providerSelector')
   .selectAuthenticationProviders;
 
-nconf.argv().env().defaults({
-  PORT: 3001,
-  TWEEK_API_HOSTNAME: 'http://api.dev.local.tweek.fm:81',
-  AUTHORING_API_HOSTNAME: 'http://authoring.dev.local.tweek.fm:81',
-  VAPID_KEYS: './vapid/keys.json',
-});
+function useFileFromBase64EnvVariable(inlineKeyName, fileKeyName) {
+  const tmpDir = os.tmpdir();
+  if (nconf.get(inlineKeyName) && !nconf.get(fileKeyName)) {
+    const keyData = new Buffer(nconf.get(inlineKeyName), 'base64');
+    const newKeyPath = `${tmpDir}/${fileKeyName}`;
+    fs.writeFileSync(newKeyPath, keyData);
+    nconf.set(fileKeyName, newKeyPath);
+  }
+}
+
+nconf
+  .use('memory')
+  .argv()
+  .env()
+  .defaults({
+    PORT: 3001,
+    TWEEK_API_HOSTNAME: 'http://api',
+    AUTHORING_API_HOSTNAME: 'http://authoring:3000',
+    MANAGEMENT_HOSTNAME: 'http://management:3000',
+    VAPID_KEYS: './vapid/keys.json',
+  });
+
+useFileFromBase64EnvVariable('GIT_PRIVATE_KEY_INLINE', 'GIT_PRIVATE_KEY_PATH');
 
 const PORT = nconf.get('PORT');
-const tweekApiHostname = nconf.get('TWEEK_API_HOSTNAME');
-const authoringApiHostname = nconf.get('AUTHORING_API_HOSTNAME');
+const serviceEndpoints = {
+  api: nconf.get('TWEEK_API_HOSTNAME'),
+  authoring: nconf.get('AUTHORING_API_HOSTNAME'),
+  management: nconf.get('MANAGEMENT_HOSTNAME'),
+};
 
-GitContinuousUpdater.onUpdate(authoringApiHostname)
+GitContinuousUpdater.onUpdate(serviceEndpoints.authoring)
   .map(_ => Registration.notifyClients())
   .do(_ => console.log('index was refreshed'), err => console.log('error refreshing index', err))
   .retry()
@@ -77,13 +99,18 @@ const startServer = async () => {
 
   const app = express();
   const server = http.Server(app);
+  app.use(helmet());
+  app.disable('x-powered-by');
 
   app.use(morgan('tiny'));
 
   addDirectoryTraversalProtection(app);
   const cookieOptions = {
     secret: nconf.get('SESSION_COOKIE_SECRET_KEY') || crypto.randomBytes(20).toString('base64'),
-    cookie: { httpOnly: true },
+    cookie: {
+      httpOnly: true,
+      sameSite: 'lax',
+    },
   };
   app.use(session(cookieOptions));
   if ((nconf.get('REQUIRE_AUTH') || '').toLowerCase() === 'true') {
@@ -92,7 +119,9 @@ const startServer = async () => {
   app.use(bodyParser.json()); // for parsing application/json
   app.use(bodyParser.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
 
-  app.use('/api', serverRoutes({ tweekApiHostname, authoringApiHostname }));
+  app.use('/api', serverRoutes({ serviceEndpoints }));
+  app.use('/health', (req, res) => res.status(200).json({}));
+  app.get('/version', (req, res) => res.send(process.env.npm_package_version));
 
   app.use(express.static(path.join(__dirname, 'build')));
   app.get('/*', (req, res) => {
@@ -100,15 +129,14 @@ const startServer = async () => {
   });
 
   app.use((err, req, res, next) => {
-    console.error(req.method, res.originalUrl, err);
+    console.error(req.method, res.originalUrl, err.message);
     res.status(500).send(err.message);
   });
 
   server.listen(PORT, () => console.log('Listening on port %d', server.address().port));
 };
 
-startServer()
-  .catch((reason) => {
-    console.error(reason);
-    // process.exit();
-  });
+startServer().catch((reason) => {
+  console.error(reason);
+  // process.exit();
+});

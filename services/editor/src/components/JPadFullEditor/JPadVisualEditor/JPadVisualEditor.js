@@ -1,5 +1,5 @@
 import React from 'react';
-import R from 'ramda';
+import * as R from 'ramda';
 import * as TypesService from '../../../services/types-service';
 import * as RulesService from '../rules-utils';
 import PartitionsSelector from './Partition/PartitionsSelector';
@@ -7,8 +7,6 @@ import RulesList from './RulesList/RulesList';
 import DefaultValue from './Rule/DefaultValue';
 import PartitionsList from './PartitionsList/PartitionsList';
 import './JPadVisualEditor.css';
-
-const isBrowser = typeof window === 'object';
 
 const resetPartitionsAlert = {
   title: 'Warning',
@@ -25,16 +23,19 @@ const autoPartitionAlert = testAutoPartition => ({
       text: 'Auto-partition',
       value: 'OK',
       className: 'auto-partition-btn',
+      'data-alert-button': 'auto-partition',
     },
     {
       text: 'Reset',
       value: 'RESET',
       className: 'reset-partitions-btn',
+      'data-alert-button': 'reset',
     },
     {
       text: 'Cancel',
       value: 'CANCEL',
       className: 'rodal-cancel-btn',
+      'data-alert-button': 'cancel',
     },
   ],
 });
@@ -51,8 +52,6 @@ function isEmptyRules(rules) {
 }
 
 export default ({ valueType, mutate, alerter, keyPath }) => {
-  if (!isBrowser) return <div>Loading rule...</div>;
-
   const partitions = mutate.in('partitions').getValue();
   const defaultValueMutate = mutate.in('defaultValue');
 
@@ -76,19 +75,19 @@ export default ({ valueType, mutate, alerter, keyPath }) => {
     switch (alertResult) {
     case 'RESET':
       mutate.apply(m =>
-          m
-            .insert('rules', createPartitionedRules(partitions.length + 1))
-            .in('partitions')
-            .append(newPartition),
-        );
+        m
+          .insert('rules', createPartitionedRules(partitions.length + 1))
+          .in('partitions')
+          .append(newPartition),
+      );
       break;
     case 'OK':
       mutate.apply(m =>
-          m
-            .insert('rules', RulesService.addPartition(newPartition, rules, partitions.length))
-            .in('partitions')
-            .append(newPartition),
-        );
+        m
+          .insert('rules', RulesService.addPartition(newPartition, rules, partitions.length))
+          .in('partitions')
+          .append(newPartition),
+      );
       break;
     }
   };
@@ -133,12 +132,14 @@ export default ({ valueType, mutate, alerter, keyPath }) => {
         />
       </div>
 
-      {partitions && partitions.length > 0
-        ? <PartitionsList
-            {...{ partitions, valueType, alerter, keyPath }}
-            mutate={mutate.in('rules')}
-          />
-        : <RulesList {...{ valueType, alerter, keyPath }} mutate={mutate.in('rules')} />}
+      {partitions && partitions.length > 0 ? (
+        <PartitionsList
+          {...{ partitions, valueType, alerter, keyPath }}
+          mutate={mutate.in('rules')}
+        />
+      ) : (
+        <RulesList {...{ valueType, alerter, keyPath }} mutate={mutate.in('rules')} />
+      )}
     </div>
   );
 };
