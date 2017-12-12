@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26430.14
+VisualStudioVersion = 15.0.27130.2003
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tweek.ApiService", "services\api\Tweek.ApiService\Tweek.ApiService.csproj", "{F1F37A97-5937-4B3F-A342-EACC4D17BE19}"
 EndProject
@@ -59,7 +59,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Rules", "Rules", "{EC243F60
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tweek.Drivers.Rules.Minio", "addons\Rules\Tweek.Drivers.Rules.Minio\Tweek.Drivers.Rules.Minio.csproj", "{5374D25F-84B6-4ACA-B92E-21902410BE84}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tweek.Drivers.Context.Cassandra", "addons\Context\Tweek.Drivers.Context.Cassandra\Tweek.Drivers.Context.Cassandra.csproj", "{EC42FC9C-B759-4381-BCF7-C56B249FF0E8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tweek.Drivers.Context.Cassandra", "addons\Context\Tweek.Drivers.Context.Cassandra\Tweek.Drivers.Context.Cassandra.csproj", "{EC42FC9C-B759-4381-BCF7-C56B249FF0E8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tweek.Drivers.Context.Cassandra.IntegrationTests", "Tweek.Drivers.Context.Cassandra.IntegrationTests\Tweek.Drivers.Context.Cassandra.IntegrationTests.csproj", "{BC02E2AF-A751-4C0D-ABA0-132DECB9D754}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -275,6 +277,18 @@ Global
 		{EC42FC9C-B759-4381-BCF7-C56B249FF0E8}.Release|x64.Build.0 = Release|Any CPU
 		{EC42FC9C-B759-4381-BCF7-C56B249FF0E8}.Release|x86.ActiveCfg = Release|Any CPU
 		{EC42FC9C-B759-4381-BCF7-C56B249FF0E8}.Release|x86.Build.0 = Release|Any CPU
+		{BC02E2AF-A751-4C0D-ABA0-132DECB9D754}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BC02E2AF-A751-4C0D-ABA0-132DECB9D754}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BC02E2AF-A751-4C0D-ABA0-132DECB9D754}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{BC02E2AF-A751-4C0D-ABA0-132DECB9D754}.Debug|x64.Build.0 = Debug|Any CPU
+		{BC02E2AF-A751-4C0D-ABA0-132DECB9D754}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{BC02E2AF-A751-4C0D-ABA0-132DECB9D754}.Debug|x86.Build.0 = Debug|Any CPU
+		{BC02E2AF-A751-4C0D-ABA0-132DECB9D754}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BC02E2AF-A751-4C0D-ABA0-132DECB9D754}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BC02E2AF-A751-4C0D-ABA0-132DECB9D754}.Release|x64.ActiveCfg = Release|Any CPU
+		{BC02E2AF-A751-4C0D-ABA0-132DECB9D754}.Release|x64.Build.0 = Release|Any CPU
+		{BC02E2AF-A751-4C0D-ABA0-132DECB9D754}.Release|x86.ActiveCfg = Release|Any CPU
+		{BC02E2AF-A751-4C0D-ABA0-132DECB9D754}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -306,6 +320,7 @@ Global
 		{EC243F60-6EE3-4022-B254-F8F7BB40AAA1} = {2407B11F-BCC6-46BC-85B0-CF64D74A441D}
 		{5374D25F-84B6-4ACA-B92E-21902410BE84} = {EC243F60-6EE3-4022-B254-F8F7BB40AAA1}
 		{EC42FC9C-B759-4381-BCF7-C56B249FF0E8} = {BD1E6B57-18E1-46E9-B16F-B531E88FB9E3}
+		{BC02E2AF-A751-4C0D-ABA0-132DECB9D754} = {BD1E6B57-18E1-46E9-B16F-B531E88FB9E3}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {520A2949-0926-487E-A33C-C1615B159589}
